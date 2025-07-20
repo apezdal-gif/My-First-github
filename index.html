@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Decaying Winter: Knife Fight</title>
+  <style>
+    body { margin: 0; background: #111; color: white; font-family: sans-serif; text-align: center; }
+    canvas { background: #222; display: block; margin: 10px auto; border: 2px solid #444; }
+    #ui { padding: 10px; }
+    .btn { background: #333; color: white; padding: 10px 20px; margin: 5px; border: none; cursor: pointer; }
+    .btn:hover { background: #555; }
+  </style>
+</head>
+<body>
+  <div id="ui">
+    ❤️ HP: <span id="hp">100</span> |
+    ☠️ Вбиті: <span id="kills">0</span> |
+    🌙 Хвиля: <span id="wave">1</span>
+  </div>
+  <canvas id="game" width="600" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    let player = { x: 300, y: 200, size: 20, hp: 100 };
+    let enemies = [];
+    let kills = 0;
+    let wave = 1;
+
+    function spawnEnemies(count) {
+      for (let i = 0; i < count; i++) {
+        enemies.push({
+          x: Math.random() * 580,
+          y: Math.random() * 380,
+          hp: 20,
+        });
+      }
+    }
+
+    function drawPlayer() {
+      ctx.fillStyle = "lime";
+      ctx.fillRect(player.x, player.y, player.size, player.size);
+    }
+
+    function drawEnemies() {
+      ctx.fillStyle = "red";
+      enemies.forEach(e => ctx.fillRect(e.x, e.y, 20, 20));
+    }
+
+    function updateGame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawPlayer();
+      drawEnemies();
+
+      enemies.forEach((e, i) => {
+        // рух ворога до гравця
+        let dx = player.x - e.x;
+        let dy = player.y - e.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 1) {
+          e.x += dx / dist;
+          e.y += dy / dist;
+        }
+
+        // атака ворога
+        if (dist < 20) {
+          player.hp -= 0.2;
+        }
+      });
+
+      document.getElementById("hp").textContent = Math.max(0, Math.floor(player.hp));
+      document.getElementById("kills").textContent = kills;
+      document.getElementById("wave").textContent = wave;
+
+      if (player.hp <= 0) {
+        alert("💀 Ти загинув! Кількість вбивств: " + kills);
+        location.reload();
+      }
+
+      requestAnimationFrame(updateGame);
+    }
+
+    document.addEventListener("keydown", e => {
+      const speed = 5;
+      if (e.key === "w") player.y -= speed;
+      if (e.key === "s") player.y += speed;
+      if (e.key === "a") player.x -= speed;
+      if (e.key === "d") player.x += speed;
+
+      // УДАР НОЖЕМ (Space)
+      if (e.code === "Space") {
+        enemies.forEach((e, i) => {
+          const dx = player.x - e.x;
+          const dy = player.y - e.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 30) {
+            e.hp -= 20;
+            if (e.hp <= 0) {
+              enemies.splice(i, 1);
+              kills++;
+            }
+          }
+        });
+
+        // Якщо всі вороги вбиті — нова хвиля
+        if (enemies.length === 0) {
+          wave++;
+          spawnEnemies(wave * 2);
+        }
+      }
+    });
+
+    spawnEnemies(2);
+    updateGame();
+  </script>
+</body>
+</html>
